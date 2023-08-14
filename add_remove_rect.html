@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resizable, Draggable, and Deletable Rectangles</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #f0f0f0;
+  }
+  #drawing-area {
+    position: relative;
+    width: 600px;
+    height: 200px;
+    border: 1px solid #ccc;
+    background-color: #2e9;
+  }
+
+  .resize-drag {
+    position: absolute;
+    width: 120px;
+    /* border-radius: 8px; */
+    padding: 0;
+    margin: 0;
+    background-color: #29e;
+    color: white;
+    font-size: 20px;
+    font-family: sans-serif;
+    touch-action: none;
+    /* This makes things *much* easier */
+    box-sizing: border-box;
+}
+
+.grid {
+  background-size: 10px 10px;
+  background-image:
+    linear-gradient(to right, grey 1px, transparent 1px),
+    linear-gradient(to bottom, grey 1px, transparent 1px);
+}
+.code1D {
+  background-image: url( 'code128.svg' );
+}
+
+</style>
+<script src="interact.min.js"></script>
+</head>
+<body>
+
+<div>
+<div id="drawing-area" class="grid">
+    <div class="resize-drag" id="rec1">
+        Resize from any edge or corner
+    </div>
+</div>
+<br>
+
+<button id="newsectionbtn">Add New Textbox</button>
+<button id="new1Dcode">Add 1D barcode</button>
+<button id="new2Dcode">Add 2D barcode</button>
+</div>
+
+<script>
+document.body.addEventListener('dblclick', function (evt) {
+    if (evt.target.className.indexOf('resize-drag') > -1 ) {
+        evt.target.remove()
+    }
+}, false);
+
+let idnum = 2;
+document.getElementById("newsectionbtn").onclick = function() {
+  var container = document.getElementById("drawing-area");
+  const box = document.createElement("div");
+  box.innerHTML = 'New box' + idnum;
+  box.id = 'rec' + idnum;
+  idnum += 1;
+  box.classList.add("resize-drag");
+  container.appendChild(box);
+}
+
+document.getElementById("new1Dcode").onclick = function() {
+  var container = document.getElementById("drawing-area");
+  const box = document.createElement("div");
+  box.innerHTML = 'New box' + idnum;
+  box.id = 'rec' + idnum;
+  idnum += 1;
+  box.classList.add("resize-drag");
+  box.classList.add("code1D");
+  container.appendChild(box);
+}
+
+document.getElementById("new2Dcode").onclick = function() {
+  var container = document.getElementById("drawing-area");
+  const box = document.createElement("img");
+  box.id = 'rec' + idnum;
+  idnum += 1;
+  box.src = "qr.svg";
+  box.classList.add("resize-drag"); 
+  container.appendChild(box);
+}
+
+// resize and drag
+interact('.resize-drag')
+  .resizable({
+    // resize from all edges and corners
+    edges: { left: false, right: true, bottom: true, top: false },
+
+    listeners: {
+      move (event) {
+        var target = event.target
+        var x = (parseFloat(target.getAttribute('data-x')) || 0)
+        var y = (parseFloat(target.getAttribute('data-y')) || 0)
+
+        // update the element's style
+        target.style.width = event.rect.width + 'px'
+        target.style.height = event.rect.height + 'px'
+
+        // translate when resizing from top or left edges
+        x += event.deltaRect.left
+        y += event.deltaRect.top
+
+        target.style.transform = 'translate(' + x + 'px,' + y + 'px)'
+
+        target.setAttribute('data-x', x)
+        target.setAttribute('data-y', y)
+        target.textContent = Math.round(event.rect.width) + '\u00D7' + Math.round(event.rect.height)
+      }
+    },
+    modifiers: [
+      // keep the edges inside the parent
+      interact.modifiers.restrictEdges({
+        outer: 'parent'
+      }),
+
+      // minimum size
+      interact.modifiers.restrictSize({
+        min: { width: 20, height: 20 }
+      })
+    ],
+
+    inertia: true
+  })
+
+  .draggable({
+    listeners: { move: window.dragMoveListener },
+    inertia: true,
+    modifiers: [
+      interact.modifiers.restrictRect({
+        restriction: 'parent',
+        endOnly: true
+      })
+    ]
+  })
+
+  function dragMoveListener (event) {
+  var target = event.target
+  // keep the dragged position in the data-x/data-y attributes
+  var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
+  var y = (parseFloat(target.getAttribute('data-y')) || 0) + event.dy
+
+  // translate the element
+  target.style.transform = 'translate(' + x + 'px, ' + y + 'px)'
+
+  // update the posiion attributes
+  target.setAttribute('data-x', x)
+  target.setAttribute('data-y', y)
+}
+
+// this function is used later in the resizing and gesture demos
+window.dragMoveListener = dragMoveListener
+
+</script>
+
+</body>
+</html>
