@@ -100,11 +100,13 @@ document.getElementById("new2Dcode").onclick = function() {
   box.id = 'rec' + idnum;
   idnum += 1;
   box.src = "qr.svg";
-  box.classList.add("resize-drag"); 
+  box.classList.add("resize-drag");
+  box.classList.add("square"); // add a new class for preserving ratio when resizing
   container.appendChild(box);
 }
 
 // resize and drag
+const myPreserveRatio = interact.modifiers.aspectRatio({ ratio: 'preserve', enabled: false })
 interact('.resize-drag')
   .resizable({
     // resize from all edges and corners
@@ -113,6 +115,12 @@ interact('.resize-drag')
     listeners: {
       move (event) {
         var target = event.target
+        // if new object has class "square" (for 2D barcodes), preserveRatio when resizing
+        if ( target.classList.contains("square") ) {
+               myPreserveRatio.enable()
+          } else {
+               myPreserveRatio.disable()
+         }
         var x = (parseFloat(target.getAttribute('data-x')) || 0)
         var y = (parseFloat(target.getAttribute('data-y')) || 0)
 
@@ -140,7 +148,8 @@ interact('.resize-drag')
       // minimum size
       interact.modifiers.restrictSize({
         min: { width: 20, height: 20 }
-      })
+      }),
+      myPreserveRatio
     ],
 
     inertia: true
@@ -157,7 +166,7 @@ interact('.resize-drag')
     ]
   })
 
-  function dragMoveListener (event) {
+function dragMoveListener (event) {
   var target = event.target
   // keep the dragged position in the data-x/data-y attributes
   var x = (parseFloat(target.getAttribute('data-x')) || 0) + event.dx
